@@ -17,7 +17,7 @@ Welcome to my personal playground of GitHub! This repository serves as a central
 - **Backtesting Suite:** A custom environment for testing Mean Reversion strategies using `Pandas` and `Backtrader`.
 - **Sentiment Analysis:** Real-time processing of financial news and social trends to gauge market "heat."
 
-## 🦅 Migratory Bird Statistics
+## 🦆 Migratory Bird Statistics
 *Tracking the flight paths and population health of avian travelers.*
 - **Migration Mapping:** Visualizing seasonal displacement patterns using GIS and public tracking data.
 - **Phenology Trends:** Analyzing how shifting climates impact the timing of arrival for songbirds and raptors.
