@@ -35,4 +35,4 @@ Welcome to my personal playground of GitHub! This repository serves as a central
 ### 📬 Let's Connect
 I'm always down to talk alpha, Expected Points Added, or the migration patterns of the Peregrine Falcon.
 
-[**[LinkedIn](https://www.linkedin.com/in/nathaniel-burren-6037783b)**](#)
+**[LinkedIn](https://www.linkedin.com/in/nathaniel-burren-6037783b)**
