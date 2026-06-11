@@ -28,7 +28,7 @@ Welcome to my personal playground of GitHub! This repository serves as a central
 ## 🛠 Tech Stack
 - **Languages:** Python (Pandas, Scikit-learn, NumPy), SQL, R.
 - **Visuals:** Tableau, Matplotlib, Plotly.
-- **Tools:** dbt core, Jupyter Notebooks, AWS (S3/Lambda), Git.
+- **Tools:** dbt core, Jupyter Notebooks, Neaon (PostgreSQL), Git.
 
 ---
 
