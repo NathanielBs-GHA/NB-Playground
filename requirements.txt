@@ -7,3 +7,4 @@ dbt-core
 nfl_data_py
 sqlalchemy
 nflreadpy
+pyarrow
