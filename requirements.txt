@@ -6,5 +6,3 @@ dbt
 nfl_data_py
 sqlalchemy
 nflreadpy
-os
-urllib
