@@ -1,8 +1,9 @@
+setuptools
 psycopg2-binary
 python-dotenv
-pandas
+pandas>=2.0.0
 requests
-dbt
+dbt-core
 nfl_data_py
 sqlalchemy
 nflreadpy
