@@ -1,0 +1,26 @@
+name: nfl_import_script
+on:
+  workflow_dispatch:
+    inputs:
+      script_name:
+        description: 'The filename of the script to run (e.g., import_nfl_player_stats.py)'
+        required: true
+        default: 'import_nfl_player_stats.py'
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Specified Script
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+        # This dynamically runs the script name provided in the input
+        run: python py_import_scripts/${{ github.event.inputs.script_name }}

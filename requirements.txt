@@ -1,0 +1,10 @@
+psycopg2-binary
+python-dotenv
+pandas
+requests
+dbt
+nfl_data_py
+sqlalchemy
+nflreadpy
+os
+urllib
