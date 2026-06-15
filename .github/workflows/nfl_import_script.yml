@@ -29,4 +29,4 @@ jobs:
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
         # This dynamically runs the script name provided in the input
-        run: python py_import_scripts/${{ github.event.inputs.script_name }}
+        run: python nfl_playground/py_import_scripts/${{ github.event.inputs.script_name }}
