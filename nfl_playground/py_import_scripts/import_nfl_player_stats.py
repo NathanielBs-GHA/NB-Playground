@@ -2,22 +2,28 @@ import nflreadpy as nfl
 import pandas as pd
 from sqlalchemy import create_engine
 import os
+import psycopg2
 import urllib.parse
 
-# 1. Database connection settings
-# Get these from your Neon project dashboard (Connect button)
-USERNAME = os.getenv("DB_USERNAME")
-PASSWORD = os.getenv("DB_PASSWORD")
-HOST = os.getenv("DB_HOST")
-DATABASE = os.getenv("DB_NAME")
-encoded_password = urllib.parse.quote_plus(PASSWORD)
+# 1. Get the full connection string from the environment variable
+conn_str = os.getenv('NEON_CONNECTION_STRING')
 
-# Construct the Neon connection string
-# Neon requires 'sslmode=require' for secure connections
+if not conn_str:
+    # Fallback for local testing if you still use PASSWORD locally
+    PASSWORD = os.getenv('DB_PASSWORD')
+    if PASSWORD:
+        encoded_password = urllib.parse.quote_plus(str(PASSWORD))
+        conn_str = f'postgresql://github_app_user:{encoded_password}@ep-blue-scene-ap3o5e85-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require'
+    else:
+        raise ValueError("Neither NEON_CONNECTION_STRING nor DB_PASSWORD found!")
 
-# Safely encode the password
-
-conn_str = f'postgresql://github_app_user:{encoded_password}@ep-blue-scene-ap3o5e85-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require'
+# 2. Connect using the string
+try:
+    conn = psycopg2.connect(conn_str)
+    print("Successfully connected to Neon!")
+    # ... rest of your code ...
+except Exception as e:
+    print(f"Connection failed: {e}")
 
 # 2. Load the NFL player stats
 # Specify the seasons you want to load (e.g., 2023 and 2024)
