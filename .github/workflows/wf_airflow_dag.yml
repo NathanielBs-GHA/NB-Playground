@@ -1,0 +1,23 @@
+# .github/workflows/deploy-dag.yml
+name: Deploy DAG to Airflow
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Copy DAG to Airflow Server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.AIRFLOW_SERVER_IP }}
+        username: ${{ secrets.AIRFLOW_USER }}
+        key: ${{ secrets.AIRFLOW_SSH_KEY }}
+        source: "dags/ebird_waterfowl_to_neon.py"
+        target: "/opt/airflow/dags/"
+        strip_components: 1

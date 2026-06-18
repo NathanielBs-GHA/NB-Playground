@@ -8,3 +8,6 @@ nfl_data_py
 sqlalchemy
 nflreadpy
 pyarrow
+requests>=2.31.0
+psycopg[binary]>=3.1.0
+apache-airflow-providers-postgres>=5.0.0
