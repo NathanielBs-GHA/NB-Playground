@@ -74,7 +74,7 @@ def fetch_and_load_migration():
         print(f"Processing date: {year}-{month:02d}-{day:02d}")
         
         for region in REGIONS:
-            url = f"https://api.ebird.org/v2/historic/{region}/{year}/{month}/{day}"
+            url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
             try:
                 response = requests.get(url, headers=headers, params={"detail": "simple"})
                 if response.status_code == 429:
