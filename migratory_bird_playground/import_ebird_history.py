@@ -11,9 +11,8 @@ load_dotenv()
 EBIRD_API_KEY = os.getenv("EBIRD_API_KEY")
 NEON_DATABASE_URL = os.getenv("NEON_CONNECTION_STRING")
 
-# --- REINFORCED ENVIRONMENT CHECK ---
 if not EBIRD_API_KEY or EBIRD_API_KEY.strip() == "" or "YOUR_" in EBIRD_API_KEY:
-    raise ValueError("CRITICAL: EBIRD_API_KEY is blank or unconfigured in the runner context.")
+    raise ValueError("CRITICAL: EBIRD_API_KEY is blank or unconfigured.")
 
 if not NEON_DATABASE_URL:
     raise ValueError("CRITICAL: NEON_CONNECTION_STRING environment variable is missing.")
@@ -28,11 +27,12 @@ def get_db_connection():
     return psycopg2.connect(NEON_DATABASE_URL)
 
 def get_waterfowl_species_codes():
-    url = "https://api.ebird.org/v2/ref/taxonomy/ebird"
+    # URL 1: Corrected taxonomy endpoint
+    url = "https://ebird.org"
     headers = {
         "x-ebirdapitoken": EBIRD_API_KEY.strip(),
         "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
     }
     query_params = {
         "fmt": "json",
@@ -43,9 +43,7 @@ def get_waterfowl_species_codes():
     content_type = response.headers.get('Content-Type', '')
     if "json" not in content_type.lower():
         print("!!! eBird API returned HTML instead of data !!!")
-        print(f"Content-Type received: {content_type}")
-        print(f"Raw Text snippet: {response.text[:300]}")
-        raise ValueError("API redirected to an HTML login page. Your API Token is invalid or blocked.")
+        raise ValueError("API redirected to an HTML login page.")
     return response.json()
 
 def fetch_and_load_migration():
@@ -58,7 +56,6 @@ def fetch_and_load_migration():
     end_date = datetime.today()
     start_date = end_date - timedelta(days=5 * 365)
     
-    # FIXED: Standardizing loop headers to match working taxonomy call specifications
     headers = {
         "x-ebirdapitoken": EBIRD_API_KEY.strip(),
         "Accept": "application/json",
@@ -71,7 +68,7 @@ def fetch_and_load_migration():
         print(f"Processing date: {year}-{month:02d}-{day:02d}")
         
         for region in REGIONS:
-            # FIXED LINE 77: Points directly to api sub-domain with valid slashes and paths
+            # URL 2: Corrected historical endpoint
             url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
             
             try:
