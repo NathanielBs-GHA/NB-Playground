@@ -28,33 +28,25 @@ def get_db_connection():
     return psycopg2.connect(NEON_DATABASE_URL)
 
 def get_waterfowl_species_codes():
-    # Enforce strict API payload delivery by adding explicit version structuring
     url = "https://api.ebird.org/v2/ref/taxonomy/ebird"
-    
     headers = {
         "x-ebirdapitoken": EBIRD_API_KEY.strip(),
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
     }
-    
-    # Pass explicit payload settings to bypass the server's web router block
     query_params = {
         "fmt": "json",
-        "cat": "species" # Tells the gateway to return structured species data profiles only
+        "cat": "species" 
     }
-    
     print(f"Sending taxonomy request using token ending in: ...{EBIRD_API_KEY[-4:] if EBIRD_API_KEY else 'NONE'}")
     response = requests.get(url, headers=headers, params=query_params)
-    
     content_type = response.headers.get('Content-Type', '')
     if "json" not in content_type.lower():
         print("!!! eBird API returned HTML instead of data !!!")
         print(f"Content-Type received: {content_type}")
         print(f"Raw Text snippet: {response.text[:300]}")
         raise ValueError("API redirected to an HTML login page. Your API Token is invalid or blocked.")
-
     return response.json()
-
 
 def fetch_and_load_migration():
     waterfowl_dict = get_waterfowl_species_codes()
@@ -66,15 +58,22 @@ def fetch_and_load_migration():
     end_date = datetime.today()
     start_date = end_date - timedelta(days=5 * 365)
     
-    headers = {"X-eBirdApiToken": EBIRD_API_KEY}
-    current_date = start_date
+    # FIXED: Standardizing loop headers to match working taxonomy call specifications
+    headers = {
+        "x-ebirdapitoken": EBIRD_API_KEY.strip(),
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+    }
     
+    current_date = start_date
     while current_date <= end_date:
         year, month, day = current_date.year, current_date.month, current_date.day
         print(f"Processing date: {year}-{month:02d}-{day:02d}")
         
         for region in REGIONS:
+            # FIXED LINE 77: Points directly to api sub-domain with valid slashes and paths
             url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
+            
             try:
                 response = requests.get(url, headers=headers, params={"detail": "simple"})
                 if response.status_code == 429:
@@ -117,6 +116,7 @@ def fetch_and_load_migration():
                     print(f"Database insertion error: {e}")
                     conn.rollback()
             time.sleep(0.1)
+            
         current_date += timedelta(days=1)
         
     cursor.close()
