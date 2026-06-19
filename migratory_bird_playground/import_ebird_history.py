@@ -71,8 +71,7 @@ def fetch_and_load_migration():
         print(f"Processing date: {year}-{month:02d}-{day:02d}")
         
         for region in REGIONS:
-            # FIXED LINE 77: Points directly to api sub-domain with valid slashes and paths
-            url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
+            base_url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
             
             try:
                 response = requests.get(url, headers=headers, params={"detail": "simple"})
