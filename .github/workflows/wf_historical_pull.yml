@@ -26,6 +26,6 @@ jobs:
     - name: Run ingestion script
       # Securely map your GitHub repository secrets to environment variables
       env:
-        EBIRD_API_KEY: ${{ secrets::EBIRD_API_KEY }}
-        NEON_CONNECTION_STRING: ${{ secrets::NEON_CONNECTION_STRING }}
+        EBIRD_API_KEY: ${{ secrets.EBIRD_API_KEY }}
+        NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
       run: python import_ebird_history.py
