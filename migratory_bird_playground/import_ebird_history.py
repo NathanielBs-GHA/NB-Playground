@@ -34,7 +34,17 @@ def get_waterfowl_species_codes():
     headers = {"X-eBirdApiToken": EBIRD_API_KEY}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    
+
+    # 1. CRITICAL: Catch HTTP errors (401, 403, 404, etc.) BEFORE parsing JSON
+    if response.status_code != 200:
+        raise ValueError(
+            f"eBird API error! Status: {response.status_code}. "
+            f"Response text: '{response.text}'. "
+            f"Please verify that your GitHub Repository Secret 'EBIRD_API_KEY' is correct and active."
+        )
+        
+    response.raise_for_status()
+
     waterfowl_codes = {}
     for record in response.json():
         if record.get("familyCode") in WATERFOWL_FAMILIES:
