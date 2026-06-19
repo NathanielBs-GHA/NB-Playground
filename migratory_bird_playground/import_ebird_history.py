@@ -11,8 +11,12 @@ load_dotenv()
 EBIRD_API_KEY = os.getenv("EBIRD_API_KEY")
 NEON_DATABASE_URL = os.getenv("NEON_CONNECTION_STRING")
 
-if not EBIRD_API_KEY or not NEON_DATABASE_URL:
-    raise ValueError("Missing environment variables! Check EBIRD_API_KEY and NEON_CONNECTION_STRING.")
+# --- REINFORCED ENVIRONMENT CHECK ---
+if not EBIRD_API_KEY or EBIRD_API_KEY.strip() == "" or "YOUR_" in EBIRD_API_KEY:
+    raise ValueError("CRITICAL: EBIRD_API_KEY is blank or unconfigured in the runner context.")
+
+if not NEON_DATABASE_URL:
+    raise ValueError("CRITICAL: NEON_CONNECTION_STRING environment variable is missing.")
 
 REGIONS = [
     "US-IL", "US-IN", "US-IA", "US-MI", "US-MN", "US-MO", "US-OH", "US-WI",
@@ -25,30 +29,25 @@ def get_db_connection():
 
 def get_waterfowl_species_codes():
     url = "https://ebird.org"
-    headers = {"X-eBirdApiToken": EBIRD_API_KEY}
     
-    print("Sending taxonomy request to eBird API...")
+    # Force the API to understand we are a backend client expecting structured data
+    headers = {
+        "X-eBirdApiToken": EBIRD_API_KEY.strip(),
+        "Accept": "application/json"
+    }
+    
+    print(f"Sending taxonomy request to eBird API using key fragment: ...{EBIRD_API_KEY[-4:] if EBIRD_API_KEY else 'NONE'}")
     response = requests.get(url, headers=headers)
     
-    # Check if we didn't get a successful 200 OK status
-    if response.status_code != 200:
-        print(f"!!! CRITICAL API ERROR !!!")
-        print(f"Status Code: {response.status_code}")
-        print(f"Raw Response: {response.text}")
-        raise ValueError(f"eBird API rejected request with status code {response.status_code}")
-        
-    try:
-        data = response.json()
-    except Exception as e:
-        print("!!! FAILED TO PARSE JSON !!!")
-        print(f"Raw response preview: {response.text[:500]}")
-        raise e
+    # Catch text redirects by checking the Content-Type header directly
+    content_type = response.headers.get('Content-Type', '')
+    if "json" not in content_type.lower():
+        print("!!! eBird API returned HTML instead of data !!!")
+        print(f"Content-Type received: {content_type}")
+        print(f"Raw Text snippet: {response.text[:300]}")
+        raise ValueError("API redirected to an HTML login page. Your API Token is invalid or blocked.")
 
-    waterfowl_codes = {}
-    for record in data:
-        if record.get("familyCode") in WATERFOWL_FAMILIES:
-            waterfowl_codes[record["speciesCode"]] = record["comName"]
-    return waterfowl_codes
+    return response.json()
 
 def fetch_and_load_migration():
     waterfowl_dict = get_waterfowl_species_codes()
