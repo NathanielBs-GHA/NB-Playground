@@ -30,16 +30,16 @@ def get_db_connection():
 def get_waterfowl_species_codes():
     url = "https://ebird.org"
     
-    # Strict compliance headers matching eBird production specs
+    # Force the API to understand we are a backend client expecting structured data
     headers = {
-        "x-ebirdapitoken": EBIRD_API_KEY.strip(), # Changed to exact lowercase spec
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)" # Bypasses automated firewall blocks
+        "X-eBirdApiToken": EBIRD_API_KEY.strip(),
+        "Accept": "application/json"
     }
     
-    print(f"Sending taxonomy request using token ending in: ...{EBIRD_API_KEY[-4:] if EBIRD_API_KEY else 'NONE'}")
+    print(f"Sending taxonomy request to eBird API using key fragment: ...{EBIRD_API_KEY[-4:] if EBIRD_API_KEY else 'NONE'}")
     response = requests.get(url, headers=headers)
     
+    # Catch text redirects by checking the Content-Type header directly
     content_type = response.headers.get('Content-Type', '')
     if "json" not in content_type.lower():
         print("!!! eBird API returned HTML instead of data !!!")
@@ -48,7 +48,6 @@ def get_waterfowl_species_codes():
         raise ValueError("API redirected to an HTML login page. Your API Token is invalid or blocked.")
 
     return response.json()
-
 
 def fetch_and_load_migration():
     waterfowl_dict = get_waterfowl_species_codes()
