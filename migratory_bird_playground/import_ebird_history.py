@@ -32,21 +32,32 @@ def get_waterfowl_species_codes():
     headers = {
         "x-ebirdapitoken": EBIRD_API_KEY.strip(),
         "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
     }
     query_params = {
         "fmt": "json",
-        "cat": "species" 
+        "cat": "species"
     }
+    
     print(f"Sending taxonomy request using token ending in: ...{EBIRD_API_KEY[-4:] if EBIRD_API_KEY else 'NONE'}")
     response = requests.get(url, headers=headers, params=query_params)
+    
     content_type = response.headers.get('Content-Type', '')
     if "json" not in content_type.lower():
-        print("!!! eBird API returned HTML instead of data !!!")
-        print(f"Content-Type received: {content_type}")
-        print(f"Raw Text snippet: {response.text[:300]}")
         raise ValueError("API redirected to an HTML login page. Your API Token is invalid or blocked.")
-    return response.json()
+    
+    raw_list = response.json()
+    
+    # Transform the list into a fast lookup dictionary filtered to waterfowl
+    waterfowl_lookup = {}
+    for item in raw_list:
+        # eBird uses 'familyCode' in its taxonomy response
+        if item.get("familyCode") in WATERFOWL_FAMILIES:
+            species_code = item.get("speciesCode")
+            common_name = item.get("comName")
+            waterfowl_lookup[species_code] = common_name
+            
+    return waterfowl_lookup
 
 def fetch_and_load_migration():
     waterfowl_dict = get_waterfowl_species_codes()
@@ -70,9 +81,11 @@ def fetch_and_load_migration():
         year, month, day = current_date.year, current_date.month, current_date.day
         print(f"Processing date: {year}-{month:02d}-{day:02d}")
         
+        # Move the batch tracker HERE so it collects data from all regions on this date
+        batch_data = []
+        
         for region in REGIONS:
             base_url = f"https://api.ebird.org/v2/data/obs/{region}/historic/{year}/{month}/{day}"
-            
             try:
                 response = requests.get(base_url, headers=headers, params={"detail": "simple"})
                 if response.status_code == 429:
@@ -85,39 +98,45 @@ def fetch_and_load_migration():
                 print(f"Failed pulling data for {region} on {year}-{month:02d}-{day:02d}: {e}")
                 continue
 
-            batch_data = []
             for obs in records:
                 spec_code = obs.get("speciesCode")
                 if spec_code in waterfowl_dict:
+                    # Map null or missing quantities to 1
+                    how_many = obs.get("howMany")
+                    how_many = int(how_many) if how_many is not None else 1
+                    
                     batch_data.append((
                         spec_code,
                         waterfowl_dict[spec_code],
                         region,
                         f"{year}-{month:02d}-{day:02d}",
-                        obs.get("howMany", 1),
+                        how_many,
                         obs.get("lat"),
                         obs.get("lng"),
                         obs.get("obsValid", True)
                     ))
             
-            if batch_data:
-                insert_query = """
-                    INSERT INTO waterfowl_migration 
-                    (species_code, common_name, region_code, observation_date, how_many, latitude, longitude, valid)
-                    VALUES %s
-                    ON CONFLICT (species_code, region_code, observation_date, latitude, longitude) 
-                    DO UPDATE SET how_many = EXCLUDED.how_many;
-                """
-                try:
-                    execute_values(cursor, insert_query, batch_data)
-                    conn.commit()
-                except Exception as e:
-                    print(f"Database insertion error: {e}")
-                    conn.rollback()
-            time.sleep(0.1)
-            
+            # Short sleep between regions to prevent aggressive throttling
+            time.sleep(0.2)
+
+        # Insert all gathered data for this specific date at once
+        if batch_data:
+            insert_query = """
+            INSERT INTO waterfowl_migration (species_code, common_name, region_code, observation_date, how_many, latitude, longitude, valid)
+            VALUES %s
+            ON CONFLICT (species_code, region_code, observation_date, latitude, longitude)
+            DO UPDATE SET how_many = EXCLUDED.how_many;
+            """
+            try:
+                execute_values(cursor, insert_query, batch_data)
+                conn.commit()
+                print(f" Successfully inserted {len(batch_data)} rows for {year}-{month:02d}-{day:02d}")
+            except Exception as e:
+                print(f"Database insertion error: {e}")
+                conn.rollback()
+
         current_date += timedelta(days=1)
-        
+       
     cursor.close()
     conn.close()
     print("Migration data ingestion pipeline complete!")
