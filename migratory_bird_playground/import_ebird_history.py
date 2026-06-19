@@ -74,7 +74,7 @@ def fetch_and_load_migration():
             base_url = f"https://ebird.org{region}/historic/{year}/{month}/{day}"
             
             try:
-                response = requests.get(url, headers=headers, params={"detail": "simple"})
+                response = requests.get(base_url, headers=headers, params={"detail": "simple"})
                 if response.status_code == 429:
                     print("Rate limit reached. Sleeping 60 seconds...")
                     time.sleep(60)
