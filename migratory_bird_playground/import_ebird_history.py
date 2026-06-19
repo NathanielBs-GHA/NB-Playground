@@ -29,7 +29,7 @@ def get_db_connection():
 
 def get_waterfowl_species_codes():
     # Enforce strict API payload delivery by adding explicit version structuring
-    url = "https://ebird.org"
+    url = "https://api.ebird.org/v2/ref/taxonomy/ebird"
     
     headers = {
         "x-ebirdapitoken": EBIRD_API_KEY.strip(),
