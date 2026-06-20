@@ -7,64 +7,79 @@ import psycopg2
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
-API_URL = "https://wft-geo-db.p.rapidapi.com/v1/geo/places/Q60/distance?toPlaceId=Q60m"
+# FIX: Changed endpoint to /v1/geo/cities to correctly search for cities
+API_URL = "https://rapidapi.com"
 
 HEADERS = {
     "X-RapidAPI-Key": str(API_KEY).strip() if API_KEY else "",
     "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
-    "Content-Type": "application/json",
     "Accept": "application/json"
 }
 
-# Temporary debug code in import_n_american_cities.py
-print("Raw Response Text:", response.text)
-payload = response.json()
-
-
 def import_cities(country_code):
-    # Adjusted parameters for reliable free-tier responses
+    # Parameters for the /v1/geo/cities endpoint
     params = {
         "countryIds": country_code,
         "limit": 50
     }
     
     print(f"\n--- Processing {country_code} ---")
-    response = requests.get(API_URL, headers=HEADERS, params=params, timeout=15)
-    print(f"HTTP Status Received: {response.status_code}")
     
+    try:
+        response = requests.get(API_URL, headers=HEADERS, params=params, timeout=15)
+        print(f"HTTP Status Received: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Network error occurred: {e}")
+        return
+
     if response.status_code == 200:
-        payload = response.json()
+        # Safety check: ensure response text isn't empty before decoding JSON
+        if not response.text.strip():
+            print(f"Error: Server returned 200 OK but an empty response body for {country_code}.")
+            return
+            
+        try:
+            payload = response.json()
+        except ValueError:
+            print(f"Error: Failed to decode JSON. Raw response: {response.text[:500]}")
+            return
+
         cities_data = payload.get('data', [])
-        
         if not cities_data:
             print(f"Warning: No city data records found for {country_code}.")
             print(f"Raw Response Body: {response.text[:200]}")
             return
-        
+
         # Connect to Neon
-        conn = psycopg2.connect(NEON_CONN_STRING)
-        cursor = conn.cursor()
-        inserted_count = 0
-        
-        for city in cities_data:
-            # Fallback schema handling for regions/states
-            state_prov = city.get('regionCode') or city.get('region') or 'N/A'
-            population = city.get('population') or 0
+        try:
+            conn = psycopg2.connect(NEON_CONN_STRING)
+            cursor = conn.cursor()
+            inserted_count = 0
             
-            cursor.execute(
-                """
-                INSERT INTO na_cities (city_name, state_province, country, latitude, longitude, population)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING;
-                """,
-                (city['city'], state_prov, city['country'], city['latitude'], city['longitude'], population)
-            )
-            inserted_count += 1
+            for city in cities_data:
+                # Fallback schema handling for regions/states
+                state_prov = city.get('regionCode') or city.get('region') or 'N/A'
+                population = city.get('population') or 0
+                
+                # Using city.get() to safely avoid KeyError if fields are missing
+                cursor.execute(
+                    """
+                    INSERT INTO na_cities (city_name, state_province, country, latitude, longitude, population)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING;
+                    """,
+                    (city.get('city', 'Unknown'), state_prov, city.get('country'), city.get('latitude'), city.get('longitude'), population)
+                )
+                inserted_count += 1
+                
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print(f"Success: Imported {inserted_count} cities for {country_code}.")
             
-        conn.commit()
-        cursor.close()
-        conn.close()
-        print(f"Success: Imported {inserted_count} cities for {country_code}.")
+        except psycopg2.Error as db_err:
+            print(f"Database error occurred: {db_err}")
+            
     else:
         print(f"Failed. Status code: {response.status_code}")
         print(f"Details: {response.text[:200]}")
@@ -76,4 +91,4 @@ if __name__ == "__main__":
         
     for country in ['US', 'CA', 'MX']:
         import_cities(country)
-        time.sleep(3) # Safe pacing delay for the free-tier gateway
+        time.sleep(3)  # Safe pacing delay for the free-tier gateway
