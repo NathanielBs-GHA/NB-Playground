@@ -7,7 +7,7 @@ import psycopg2
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
-# FIX: Changed endpoint to /v1/geo/cities to correctly search for cities
+# Target the actual cities lookup endpoint, NOT the distance endpoint
 API_URL = "https://rapidapi.com"
 
 HEADERS = {
