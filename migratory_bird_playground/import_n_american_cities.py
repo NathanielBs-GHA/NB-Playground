@@ -8,13 +8,13 @@ API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
 # 2. Correct GeoDB Cities endpoint (Not the distance playground)
-API_URL = "https://rapidapi.com"
+# Change your API_URL and HEADERS to this:
+API_URL = "http://wirefreethought.com"
 
 HEADERS = {
-    "X-RapidAPI-Key": str(API_KEY).strip() if API_KEY else "",
-    "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
     "Accept": "application/json"
 }
+
 
 def import_cities(country_code):
     # API lookup parameters targeting 50 records per country code
