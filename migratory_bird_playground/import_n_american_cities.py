@@ -7,7 +7,7 @@ import psycopg2
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
-API_URL = "https://rapidapi.com"
+API_URL = "https://wft-geo-db.p.rapidapi.com/v1/geo/places/Q60/distance?toPlaceId=Q60m"
 
 HEADERS = {
     "X-RapidAPI-Key": str(API_KEY).strip() if API_KEY else "",
