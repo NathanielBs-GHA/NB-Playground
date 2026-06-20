@@ -7,8 +7,7 @@ import psycopg2
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
-# 2. Correct GeoDB Cities endpoint (Not the distance playground)
-# Change your API_URL and HEADERS to this:
+# 2. Define the API endpoint and headers for the GeoDB Cities API
 API_URL = "http://geodb-cities-api.wirefreethought.com/v1/geo/cities"
 
 HEADERS = {
