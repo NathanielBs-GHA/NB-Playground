@@ -4,7 +4,7 @@ import requests
 import psycopg2
 
 # 1. Map exactly to the environment variables exposed in your workflow log
-API_KEY = os.getenv("X_RAPIDAPI_KEY")
+API_KEY = "435b7b2308msh9eee01fda766b76p159242jsnc76484ed9ed5"
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
 # FIX: Changed endpoint to /v1/geo/cities to correctly search for cities
