@@ -137,7 +137,7 @@ def run_pipeline():
         
         # Build list of chronological target dates (5 years)
         end_date = datetime.today()
-        start_date = end_date - timedelta(days=5 * 365)
+        start_date = datetime(2023, 12, 27) #end_date - timedelta(days=5 * 365)
         
         date_list = []
         current = start_date
