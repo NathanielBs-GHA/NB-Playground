@@ -16,6 +16,11 @@ HEADERS = {
     "Accept": "application/json"
 }
 
+# Temporary debug code in import_n_american_cities.py
+print("Raw Response Text:", response.text)
+payload = response.json()
+
+
 def import_cities(country_code):
     # Adjusted parameters for reliable free-tier responses
     params = {
