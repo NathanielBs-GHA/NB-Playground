@@ -24,6 +24,6 @@ jobs:
 
       - name: Execute Import Script
         env:
-          X_RAPIDAPI_KEY:"435b7b2308msh9eee01fda766b76p159242jsnc76484ed9ed5"
+          X_RAPIDAPI_KEY: ${{ secrets.X_RAPIDAPI_KEY }}
           NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
         run: python migratory_bird_playground/import_n_american_cities.py
