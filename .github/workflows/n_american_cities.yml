@@ -1,11 +1,7 @@
 name: Sync North American Cities to Neon
 
 on:
-  # 1. Automatically runs every Sunday at midnight UTC
-  schedule:
-    - cron: '0 0 * * 0'
-  
-  # 2. Allows manual "Run workflow" trigger button from the GitHub UI
+  # This event enables the manual "Run workflow" play button in the GitHub UI
   workflow_dispatch:
 
 jobs:
@@ -13,23 +9,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Pull repository files into the environment
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Provision Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Step 3: Install necessary database and HTTP dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests psycopg2-binary
 
-      # Step 4: Inject encrypted credentials and run script
       - name: Execute Import Script
         env:
           X_RAPIDAPI_KEY: ${{ secrets.X_RAPIDAPI_KEY }}
