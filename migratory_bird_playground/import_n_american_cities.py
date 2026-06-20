@@ -2,7 +2,6 @@ import os
 import time
 import requests
 import psycopg2
-from requests.exceptions import JSONDecodeError
 
 # Load credentials securely from environment variables
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
@@ -18,6 +17,7 @@ HEADERS = {
 }
 
 def import_cities(country_code):
+    # API parameter key MUST be 'countryIds' (exact case-sensitivity match)
     params = {
         "countryIds": country_code, 
         "minPopulation": 50000, 
@@ -30,47 +30,48 @@ def import_cities(country_code):
         print(f"HTTP Status Received: {response.status_code}")
         
         if response.status_code == 200:
-            try:
-                payload = response.json()
-                cities_data = payload.get('data', [])
+            payload = response.json()
+            cities_data = payload.get('data', [])
+            
+            if not cities_data:
+                print(f"Warning: No city data records returned for {country_code}.")
+                return
+            
+            # Establish database pipeline connection
+            conn = psycopg2.connect(NEON_CONN_STRING)
+            cursor = conn.cursor()
+            
+            inserted_count = 0
+            for city in cities_data:
+                # FIX: GeoDB maps state/province to 'regionCode' or 'region', fallback handles both cleanly
+                state_prov = city.get('regionCode') or city.get('region', 'N/A')
                 
-                if not cities_data:
-                    print(f"Warning: No city data returned for {country_code}.")
-                    return
+                cursor.execute(
+                    """
+                    INSERT INTO na_cities (city_name, state_province, country, latitude, longitude, population)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING;
+                    """,
+                    (city['city'], state_prov, city['country'], city['latitude'], city['longitude'], city['population'])
+                )
+                inserted_count += 1
                 
-                # Execute Database Insertion
-                conn = psycopg2.connect(NEON_CONN_STRING)
-                cursor = conn.cursor()
-                for city in cities_data:
-                    cursor.execute(
-                        """
-                        INSERT INTO na_cities (city_name, state_province, country, latitude, longitude, population)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        ON CONFLICT DO NOTHING;
-                        """,
-                        (city['city'], city['region'], city['country'], city['latitude'], city['longitude'], city['population'])
-                    )
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"Success: Imported {len(cities_data)} cities for {country_code}.")
-                
-            except JSONDecodeError:
-                print(f"Parsing Failure: Response was not valid JSON.")
-                print(f"Snippet of unexpected raw data: {response.text[:300]}")
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print(f"Success: Verified and queued {inserted_count} cities for {country_code}.")
         else:
-            print(f"API Rejected Request. Error Code: {response.status_code}")
-            print(f"Message payload: {response.text[:300]}")
+            print(f"API Gateway rejected request. Status code: {response.status_code}")
+            print(f"Payload trace: {response.text[:300]}")
             
     except Exception as e:
-        print(f"Network error trying to process {country_code}: {str(e)}")
+        print(f"Network error parsing context pipeline for {country_code}: {str(e)}")
 
 if __name__ == "__main__":
     if not API_KEY or not NEON_CONN_STRING:
-        print("CRITICAL: One or more environment secrets are missing or blank.")
+        print("CRITICAL: Target environment variable string secrets are missing or blank.")
         exit(1)
         
     for country in ['US', 'CA', 'MX']:
         import_cities(country)
-        # Pace requests out by 2 seconds to safely pass RapidAPI's basic free-tier firewall
-        time.sleep(2)
+        time.sleep(2) # Prevent free-tier gateway firewalls from flagging the GitHub runner IP
