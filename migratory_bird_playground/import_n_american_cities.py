@@ -31,23 +31,23 @@ def import_cities(country_code):
     except requests.exceptions.RequestException as e:
         print(f"Network error occurred: {e}")
         return
-
+    
     if response.status_code == 200:
-        # Safety check: ensure response text isn't empty before decoding JSON
+        # Stop early if the content type is HTML instead of JSON
+        content_type = response.headers.get('Content-Type', '')
+        if 'text/html' in content_type:
+            print(f"Error: Server returned an HTML web page instead of JSON.")
+            print(f"Ensure your X_RAPIDAPI_KEY secret is valid and not empty.")
+            return
+
         if not response.text.strip():
-            print(f"Error: Server returned 200 OK but an empty response body for {country_code}.")
+            print(f"Error: Server returned an empty response body.")
             return
             
         try:
             payload = response.json()
         except ValueError:
-            print(f"Error: Failed to decode JSON. Raw response: {response.text[:500]}")
-            return
-
-        cities_data = payload.get('data', [])
-        if not cities_data:
-            print(f"Warning: No city data records found for {country_code}.")
-            print(f"Raw Response Body: {response.text[:200]}")
+            print(f"Error: Failed to decode JSON. Preview: {response.text[:200]}")
             return
 
         # Connect to Neon
