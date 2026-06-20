@@ -34,4 +34,4 @@ jobs:
         env:
           X_RAPIDAPI_KEY: ${{ secrets.X_RAPIDAPI_KEY }}
           NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
-        run: python import_n_american_cities.py
+        run: python migratory_bird_playground/import_n_american_cities.py
