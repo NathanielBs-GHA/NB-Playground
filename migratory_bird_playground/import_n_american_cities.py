@@ -2,8 +2,8 @@ import os
 import time
 import requests
 import psycopg2
+from requests.exceptions import JSONDecodeError
 
-# Load credentials securely from environment variables
 API_KEY = os.getenv("X_RAPIDAPI_KEY")
 NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
@@ -17,19 +17,19 @@ HEADERS = {
 }
 
 def import_cities(country_code):
-    # API parameter key MUST be 'countryIds' (exact case-sensitivity match)
+    # Modified parameters to minimize variables
     params = {
         "countryIds": country_code, 
         "minPopulation": 50000, 
-        "limit": 100
+        "limit": 10
     }
     
     print(f"--- Processing {country_code} ---")
-    try:
-        response = requests.get(API_URL, headers=HEADERS, params=params, timeout=15)
-        print(f"HTTP Status Received: {response.status_code}")
-        
-        if response.status_code == 200:
+    response = requests.get(API_URL, headers=HEADERS, params=params, timeout=15)
+    print(f"HTTP Status Received: {response.status_code}")
+    
+    if response.status_code == 200:
+        try:
             payload = response.json()
             cities_data = payload.get('data', [])
             
@@ -37,15 +37,11 @@ def import_cities(country_code):
                 print(f"Warning: No city data records returned for {country_code}.")
                 return
             
-            # Establish database pipeline connection
             conn = psycopg2.connect(NEON_CONN_STRING)
             cursor = conn.cursor()
-            
             inserted_count = 0
             for city in cities_data:
-                # FIX: GeoDB maps state/province to 'regionCode' or 'region', fallback handles both cleanly
                 state_prov = city.get('regionCode') or city.get('region', 'N/A')
-                
                 cursor.execute(
                     """
                     INSERT INTO na_cities (city_name, state_province, country, latitude, longitude, population)
@@ -60,18 +56,24 @@ def import_cities(country_code):
             cursor.close()
             conn.close()
             print(f"Success: Verified and queued {inserted_count} cities for {country_code}.")
-        else:
-            print(f"API Gateway rejected request. Status code: {response.status_code}")
-            print(f"Payload trace: {response.text[:300]}")
             
-    except Exception as e:
-        print(f"Network error parsing context pipeline for {country_code}: {str(e)}")
+        except JSONDecodeError:
+            print("CRITICAL JSON ERROR: Server returned 200 OK but the response text is NOT valid JSON.")
+            print("----------------- SERVER TEXT START -----------------")
+            print(response.text[:1000])  # Expose raw text payload directly to the logs
+            print("------------------ SERVER TEXT END ------------------")
+            
+        except Exception as db_err:
+            print(f"Database error during insertion logic: {str(db_err)}")
+    else:
+        print(f"API Gateway rejected request with status code: {response.status_code}")
+        print(f"Payload trace: {response.text[:300]}")
 
 if __name__ == "__main__":
     if not API_KEY or not NEON_CONN_STRING:
-        print("CRITICAL: Target environment variable string secrets are missing or blank.")
+        print("CRITICAL: Target environment variables are missing.")
         exit(1)
         
     for country in ['US', 'CA', 'MX']:
         import_cities(country)
-        time.sleep(2) # Prevent free-tier gateway firewalls from flagging the GitHub runner IP
+        time.sleep(3)
