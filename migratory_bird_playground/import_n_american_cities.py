@@ -2,11 +2,15 @@ import requests
 import psycopg2
 import os
 
-# 1. API Configuration (Using GeoDB Cities on RapidAPI)
+# 1. Point to the collection endpoint, NOT the distance calculator
 API_URL = "https://rapidapi.com"
+
+# Derived directly from the working headers layout in your screenshot
 HEADERS = {
-    "X-RapidAPI-Key": os.getenv("X_RAPIDAPI_KEY"),
-    "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com"
+    "X-RapidAPI-Key": os.getenv("RAPIDAPI_KEY"),
+    "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
+    "Content-Type": "application/json",
+    "Accept": "application/json"
 }
 
 # 2. Neon Database Connection
