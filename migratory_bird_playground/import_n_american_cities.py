@@ -9,7 +9,12 @@ NEON_CONN_STRING = os.getenv("NEON_CONNECTION_STRING")
 
 # 2. Correct GeoDB Cities endpoint (Not the distance playground)
 API_URL = "https://rapidapi.com"
-HEADERS = {"Accept": "application/json"}
+
+HEADERS = {
+    "X-RapidAPI-Key": str(API_KEY).strip() if API_KEY else "",
+    "X-RapidAPI-Host": "wft-geo-db.p.rapidapi.com",
+    "Accept": "application/json"
+}
 
 def import_cities(country_code):
     # API lookup parameters targeting 50 records per country code
@@ -30,10 +35,16 @@ def import_cities(country_code):
     # Check for successful response
     if response.status_code == 200:
         # Detect if RapidAPI returned an HTML gateway page instead of raw data
+        # Enhanced HTML Debugging Block
         content_type = response.headers.get('Content-Type', '')
         if 'text/html' in content_type:
             print("Error: Server returned an HTML web page instead of JSON.")
-            print("Action Needed: Double-check your GitHub repository secrets mapping for X_RAPIDAPI_KEY.")
+            # This extracts the HTML title tag or first 500 characters so you can read the error
+            import re
+            title = re.search(r'<title>(.*?)</title>', response.text, re.IGNORECASE)
+            page_title = title.group(1) if title else "No Title Found"
+            print(f"HTML Page Title: {page_title}")
+            print(f"Raw Snippet: {response.text[:500]}")
             return
 
         if not response.text.strip():
